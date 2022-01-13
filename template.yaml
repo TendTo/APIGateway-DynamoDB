@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: ApiGateway to DynamoDb
+
+Parameters:
+  apiStage:
+    Type: String
+    Description: stage used to deploy the API
+    Default: dev
+  tableName:
+    Type: String
+    Description: name of the dynamoDB table
+    Default: TableName
+
+Resources:
+
+  ApiGatewayRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ApiGatewayDynamoDBCRUDRole
+      Description: Role assumed by the ApiGateway - allows basic CRUD operation on DynamoDB
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action:
+              - sts:AssumeRole
+
+  DynamoDBCRUDPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: DynamoDBCRUDPolicy
+      Roles:
+        - !Ref ApiGatewayRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "DynamoDBCRUDPolicy"
+            Effect: "Allow"
+            Resource: 
+              - !GetAtt DynamoDB.Arn
+              - !Sub "${DynamoDB.Arn}/index/*"
+            Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:PutItem
+              - dynamodb:DeleteItem
+              - dynamodb:GetItem
+              - dynamodb:Scan
+              - dynamodb:Query
+              - dynamodb:UpdateItem
+
+  DynamoDB:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref tableName
+      AttributeDefinitions: 
+        - AttributeName: pk
+          AttributeType: "S"
+        - AttributeName: sk
+          AttributeType: "S"
+        - AttributeName: fk
+          AttributeType: "S"
+      KeySchema: 
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: GSI_1
+          KeySchema:
+            - AttributeName: sk
+              KeyType: HASH
+            - AttributeName: pk
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+        - IndexName: GSI_2
+          KeySchema:
+            - AttributeName: fk
+              KeyType: HASH
+            - AttributeName: pk
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+      ProvisionedThroughput: 
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: gateway
+      StageName: !Ref apiStage
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: ./swagger.yaml
+
+Outputs:
+  ApiGateway:
+    Description: "API Gateway endpoint URL for ${apiStage}"
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${apiStage}/"
+

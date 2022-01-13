@@ -1,0 +1,324 @@
+---
+swagger: "2.0"
+info:
+  version: "2022-01-12T16:57:54Z"
+  title: "Library API"
+host: "api.region.amazonaws.com"
+basePath:
+  Ref: apiStage
+schemes:
+- "https"
+paths:
+  /authors:
+    get:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        "200":
+          description: "List of all the authors"
+          schema:
+            $ref: "#/definitions/Authors"
+      x-amazon-apigateway-integration:
+        type: "aws"
+        credentials: 
+          Fn::GetAtt: [ApiGatewayRole, Arn]
+        httpMethod: "POST"
+        uri: 
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:dynamodb:action/Query"
+        responses:
+          default:
+            statusCode: "200"
+            responseTemplates:
+              application/json: |
+                #if($input.path('$.message') && $input.path('$.message').contains('The conditional request failed'))
+                  #set($context.responseOverride.status = 400)
+                  {}
+                #else
+                  #set($context.responseOverride.status = 200)
+                  #set($inputRoot = $input.path('$'))
+                  {
+                    "Count": $inputRoot.Count,
+                    "ScannedCount": $inputRoot.ScannedCount,
+                    "Items": [
+                        #foreach($item in $inputRoot.Items) 
+                        {
+                          "pk": "$item.pk.S",
+                          "sk": "$item.sk.S",
+                          "Name": "$item.Name.S",
+                          "Address": "$item.Address.S",
+                          "URL": "$item.URL.S",
+                          "createdAt": $item.createdAt.N,
+                          "updatedAt": $item.updatedAt.N
+                        } #if($foreach.hasNext),#end
+                        #end
+                    ]
+                  }
+                #end
+        requestTemplates:
+          application/json: 
+            Fn::Sub: |
+              {
+                  "TableName": "${tableName}",
+                  "IndexName": "GSI_1",
+                  "KeyConditionExpression": "#sk = :sk",
+                  "ExpressionAttributeNames": {
+                      "#sk": "sk"
+                  },
+                  "ExpressionAttributeValues": {
+                      ":sk": {
+                          "S": "author"
+                      }
+                  }
+              }
+        passthroughBehavior: "when_no_templates"
+    post:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "Author"
+        required: true
+        schema:
+          $ref: "#/definitions/Author"
+      responses:
+        "200":
+          description: "Newly created author or updated author"
+          schema:
+            $ref: "#/definitions/Author"
+        "400":
+          description: "The author to update does not exist"
+          schema:
+            $ref: "#/definitions/Empty"
+      x-amazon-apigateway-request-validator: "Validate body"
+      x-amazon-apigateway-integration:
+        type: "aws"
+        credentials: 
+          Fn::GetAtt: [ApiGatewayRole, Arn]
+        httpMethod: "POST"
+        uri: "arn:aws:apigateway:eu-west-1:dynamodb:action/UpdateItem"
+        responses:
+          default:
+            statusCode: "200"
+            responseTemplates:
+              application/json: |
+                #if($input.path('$.message') && $input.path('$.message').contains('The conditional request failed'))
+                  #set($context.responseOverride.status = 400)
+                  {}
+                #else
+                  #set($context.responseOverride.status = 200)
+                  #set($item = $input.path('$.Attributes'))
+                  {
+                    "Item": {
+                      "pk": "$item.pk.S",
+                      "sk": "$item.sk.S",
+                      "Name": "$item.Name.S",
+                      "Address": "$item.Address.S",
+                      "URL": "$item.URL.S",
+                      "createdAt": $item.createdAt.N,
+                      "updatedAt": $item.updatedAt.N
+                    }
+                  }
+                #end
+        requestTemplates:
+          application/json: 
+            Fn::Sub: |
+              #set($isUpdate = $input.path('$.pk') && $input.path('$.pk') != "")
+              {
+                  "TableName": "${tableName}",
+                  "Key": {
+                  #if($isUpdate)
+                      "pk": {
+                          "S": $input.json('$.pk')
+                      },
+                  #else
+                      "pk": {
+                          "S": "author_$context.extendedRequestId"
+                      },
+                  #end
+                      "sk": {
+                          "S": "author"
+                      }
+                  },
+                  #if($isUpdate)
+                    "UpdateExpression": "set #Name = :Name, #URL = :URL, #Address = :Address, #updatedAt = :updatedAt",
+                    "ConditionExpression": "attribute_exists(createdAt)",
+                  #else
+                    "UpdateExpression": "set #Name = :Name, #URL = :URL, #Address = :Address, #createdAt = :createdAt",
+                    "ConditionExpression": "attribute_not_exists(createdAt)",
+                  #end
+                  "ExpressionAttributeNames": {
+                      "#Name": "Name",
+                      "#URL": "URL",
+                      "#Address": "Address",
+                      #if($isUpdate)
+                        "#updatedAt": "updatedAt"
+                      #else
+                        "#createdAt": "createdAt"
+                      #end
+                  },
+                  "ExpressionAttributeValues": {
+                      ":Name": {
+                          "S": $input.json('$.Name')
+                      },
+                      ":URL": {
+                          "S": $input.json('$.URL')
+                      },
+                      ":Address": {
+                          "S": $input.json('$.Address')
+                      },
+                      #if($isUpdate)
+                        ":updatedAt": {
+                      #else
+                        ":createdAt": {
+                      #end
+                          "N": "$context.requestTimeEpoch"
+                      }
+                  },
+                  "ReturnValues": "ALL_NEW"
+              }
+        passthroughBehavior: "when_no_templates"
+  /authors/{id}:
+    get:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "Author"
+          schema:
+            $ref: "#/definitions/Author"
+        "404":
+          description: "The author is not present in the database"
+          schema:
+            $ref: "#/definitions/Empty"
+      x-amazon-apigateway-integration:
+        type: "aws"
+        credentials: 
+          Fn::GetAtt: [ApiGatewayRole, Arn]
+        httpMethod: "POST"
+        uri: "arn:aws:apigateway:eu-west-1:dynamodb:action/GetItem"
+        responses:
+          default:
+            statusCode: "200"
+            responseTemplates:
+              application/json: |
+                #if($input.body == "{}")
+                  #set($context.responseOverride.status = 400)
+                  {}
+                #else
+                  #set($context.responseOverride.status = 200)
+                  #set($item = $input.path('$.Item'))
+                  {
+                    "Item": {
+                      "pk": "$item.pk.S",
+                      "sk": "$item.sk.S",
+                      "Name": "$item.Name.S",
+                      "Address": "$item.Address.S",
+                      "URL": "$item.URL.S",
+                      "createdAt": $item.createdAt.N,
+                      "updatedAt": $item.updatedAt.N
+                    }
+                  }
+                #end
+        requestTemplates:
+          application/json:
+            Fn::Sub: |
+              {
+                  "TableName": "${tableName}",
+                  "Key": {
+                      "pk": {
+                          "S": "$input.params('id')"
+                      },
+                      "sk": {
+                          "S": "author"
+                      }
+                  }
+              }
+        passthroughBehavior: "when_no_templates"
+    delete:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/Empty"
+      x-amazon-apigateway-integration:
+        type: "aws"
+        credentials: 
+          Fn::GetAtt: [ApiGatewayRole, Arn]
+        httpMethod: "POST"
+        uri: "arn:aws:apigateway:eu-west-1:dynamodb:action/DeleteItem"
+        responses:
+          default:
+            statusCode: "200"
+        requestTemplates:
+          application/json:
+            Fn::Sub: |
+              {
+                  "TableName": "${tableName}",
+                  "Key": {
+                      "pk": {
+                          "S": "$input.params('id')"
+                      },
+                      "sk": {
+                          "S": "author"
+                      }
+                  }
+              }
+        passthroughBehavior: "when_no_templates"
+definitions:
+  Empty:
+    type: object
+    title: Empty Schema
+  Author:
+    type: object
+    required:
+    - Address
+    - Name
+    - URL
+    properties:
+      pk:
+        type: string
+      Name:
+        type: string
+      URL:
+        type: string
+      Address:
+        type: string
+  Authors:
+    type: object
+    required:
+      - Count
+      - Items
+      - ScannedCount
+    properties:
+      Count:
+        type: integer
+      Items:
+        type: array
+        items:
+          $ref: '#/definitions/Author'
+      ScannedCount:
+        type: integer
+x-amazon-apigateway-request-validators:
+  Validate body:
+    validateRequestParameters: false
+    validateRequestBody: true

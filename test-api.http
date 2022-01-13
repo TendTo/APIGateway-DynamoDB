@@ -1,0 +1,46 @@
+@url = <base url of API Gateway. Is among the outputs of the deployement>
+@pk = <pk of an author>
+
+################################################################################
+# Get all the authors
+################################################################################
+GET {{url}}/authors
+
+################################################################################
+# Create a new author
+################################################################################
+POST {{url}}/authors
+Accept: application/json
+Content-Type: application/json
+
+{
+    "Name": "name",
+    "Address": "address",
+    "URL": "URL"
+}
+
+################################################################################
+# Update an author
+################################################################################
+POST {{url}}/authors
+Accept: application/json
+Content-Type: application/json
+
+{
+    "pk": "{{pk}}",
+    "Name": "updated name",
+    "Address": "updated address",
+    "URL": "updated URL"
+}
+
+################################################################################
+# Get a specific author
+################################################################################ 
+GET {{url}}/authors/{{pk}}
+Content-Type: application/json
+Accept: application/json
+
+################################################################################
+# Delete an author
+################################################################################
+DELETE {{url}}/authors/{{pk}}
