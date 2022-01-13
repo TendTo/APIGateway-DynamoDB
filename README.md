@@ -172,6 +172,10 @@ requestTemplates:
 - **Response mapping template**: the template used is generic, but it is not
   suited for parsing through _lists_ or _mapping_ type attributes, leaving them
   unchanged.\
+  To do it properly, AWS mapping templates should support
+  [Velocimacros](https://velocity.apache.org/engine/1.7/user-guide.html#velocimacros),
+  but right now they
+  [don't](https://forums.aws.amazon.com/thread.jspa?threadID=284790).\
   If your model has an attribute of any of these types, consider a custom
   mapping template
 
