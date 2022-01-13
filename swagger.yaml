@@ -31,31 +31,27 @@ paths:
           default:
             statusCode: "200"
             responseTemplates:
-              application/json: |
-                #if($input.path('$.message') && $input.path('$.message').contains('The conditional request failed'))
-                  #set($context.responseOverride.status = 400)
-                  {}
-                #else
-                  #set($context.responseOverride.status = 200)
-                  #set($inputRoot = $input.path('$'))
-                  {
-                    "Count": $inputRoot.Count,
-                    "ScannedCount": $inputRoot.ScannedCount,
-                    "Items": [
-                        #foreach($item in $inputRoot.Items) 
-                        {
-                          "pk": "$item.pk.S",
-                          "sk": "$item.sk.S",
-                          "Name": "$item.Name.S",
-                          "Address": "$item.Address.S",
-                          "URL": "$item.URL.S",
-                          "createdAt": $item.createdAt.N,
-                          "updatedAt": $item.updatedAt.N
-                        } #if($foreach.hasNext),#end
-                        #end
-                    ]
-                  }
-                #end
+              application/json: 
+                Fn::Sub: |
+                    ${responseMappingTemplateDef}
+                    #if($input.path('$.message') && $input.path('$.message').contains('The conditional request failed'))
+                      #set($context.responseOverride.status = 400)
+                      {}
+                    #else
+                      #set($context.responseOverride.status = 200)
+                      #set($inputRoot = $input.path('$'))
+                      {
+                        "Count": $inputRoot.Count,
+                        "ScannedCount": $inputRoot.ScannedCount,
+                        "Items": [
+                            #foreach($item in $inputRoot.Items) 
+                            {
+                              $DDBAttributeParser
+                            } #if($foreach.hasNext),#end
+                            #end
+                        ]
+                      }
+                    #end
         requestTemplates:
           application/json: 
             Fn::Sub: |
@@ -104,25 +100,21 @@ paths:
           default:
             statusCode: "200"
             responseTemplates:
-              application/json: |
-                #if($input.path('$.message') && $input.path('$.message').contains('The conditional request failed'))
-                  #set($context.responseOverride.status = 404)
-                  {}
-                #else
-                  #set($context.responseOverride.status = 200)
-                  #set($item = $input.path('$.Attributes'))
-                  {
-                    "Item": {
-                      "pk": "$item.pk.S",
-                      "sk": "$item.sk.S",
-                      "Name": "$item.Name.S",
-                      "Address": "$item.Address.S",
-                      "URL": "$item.URL.S",
-                      "createdAt": $item.createdAt.N,
-                      "updatedAt": $item.updatedAt.N
+              application/json: 
+                Fn::Sub: |
+                  ${responseMappingTemplateDef}
+                  #if($input.path('$.message') && $input.path('$.message').contains('The conditional request failed'))
+                    #set($context.responseOverride.status = 404)
+                    {}
+                  #else
+                    #set($context.responseOverride.status = 200)
+                    #set($item = $input.path('$.Attributes'))
+                    {
+                      "Item": {
+                        $DDBAttributeParser
+                      }
                     }
-                  }
-                #end
+                  #end
         requestTemplates:
           application/json: 
             Fn::Sub: |
@@ -211,25 +203,21 @@ paths:
           default:
             statusCode: "200"
             responseTemplates:
-              application/json: |
-                #if($input.body == "{}")
-                  #set($context.responseOverride.status = 404)
-                  {}
-                #else
-                  #set($context.responseOverride.status = 200)
-                  #set($item = $input.path('$.Item'))
-                  {
-                    "Item": {
-                      "pk": "$item.pk.S",
-                      "sk": "$item.sk.S",
-                      "Name": "$item.Name.S",
-                      "Address": "$item.Address.S",
-                      "URL": "$item.URL.S",
-                      "createdAt": $item.createdAt.N,
-                      "updatedAt": $item.updatedAt.N
+              application/json:
+                Fn::Sub: |
+                  ${responseMappingTemplateDef}
+                  #if($input.body == "{}")
+                    #set($context.responseOverride.status = 404)
+                    {}
+                  #else
+                    #set($context.responseOverride.status = 200)
+                    #set($item = $input.path('$.Item'))
+                    {
+                      "Item": {
+                        $DDBAttributeParser
+                      }
                     }
-                  }
-                #end
+                  #end
         requestTemplates:
           application/json:
             Fn::Sub: |

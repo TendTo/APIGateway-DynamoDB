@@ -11,6 +11,36 @@ Parameters:
     Type: String
     Description: name of the dynamoDB table
     Default: TableName
+  responseMappingTemplateDef:
+    Type: String
+    Description: |
+      utility definition used in most response mapping templates.
+      Parses the item recieved from DynamoDB in a more JSON friendly form.
+      Do not override unless you know what you are doing
+    Default: |
+      #define( $DDBAttributeParser )
+        #foreach($entry in $item.entrySet())
+          #if($entry.value.S && $entry.value.S != "")
+            "$entry.key": "$entry.value.S"
+          #elseif($entry.value.B && $entry.value.B != "")
+            "$entry.key": "$entry.value.B"
+          #elseif($entry.value.NULL && $entry.value.NULL != "")
+            "$entry.key": null
+          #elseif($entry.value.NS && $entry.value.NS != "")
+            "$entry.key": [
+            #foreach($value in $entry.value.NS)
+              $value #if($foreach.hasNext),#end
+            #end
+            ]
+          #elseif($entry.value.M && $entry.value.M != "")
+            "$entry.key": $input.json("$.Item.${entry.key}")
+          #else
+            "$entry.key": $entry.value.values().toArray()[0]
+          #end
+          #if($foreach.hasNext),#end
+        #end
+      #end
+
 
 Resources:
 
