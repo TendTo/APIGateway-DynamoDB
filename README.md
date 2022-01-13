@@ -9,10 +9,10 @@ Use AWS API Gateway as a proxy for DynamoDB.
 ├── .devcontainer      # used by VsCode to launch a devcontainer with SAM
 ├── scripts            # utility scripts to deploy and delete the AWS Cloudformation Stack
 ├── .gitignore         # .gitignore file
-├── LICENCE            # licence of the project
+├── LICENCE            # license of the project
 ├── README.md          # this file
-├── samconfig.toml     # configuration used by SAM when deployng the Cloudformation Stack
-├── swagger.yaml       # extended OpenAPI description of the API of the API Gateway configuration
+├── samconfig.toml     # configuration used by SAM when deploying the Cloudformation Stack
+├── swagger.yaml       # extended OpenAPI description of the API Gateway configuration
 ├── template.yaml      # template that describes the serverless architecture and its resources
 └── test-api.http      # basic CRUD operations to test the API
 ```
@@ -33,16 +33,16 @@ The file storing the credentials should be in the default location
 `~/.aws/credentials`, unless otherwise specified.
 
 Optionally, you can install also the [AWS CLI](https://aws.amazon.com/cli/) for
-a more fine tuned control over your operations.
+more fine-tuned control over your operations.
 
 ### 🐳 Use the DevContainer
 
 If you are using VsCode, you could take advantage of its DevContainer
-functionalities. In that case, you would jjust need to have
+functionalities. In that case, you would just need to have
 [Docker](https://docs.docker.com/get-docker/) installed.
 
-You still need the credentials of an account with enough premissions to perform
-the deployement.\
+You still need the credentials of an account with enough permissions to perform
+the deployment.\
 The credentials file will be fetched from `~/.aws/credentials`, unless otherwise
 specified.
 
@@ -51,17 +51,17 @@ specified.
 The configuration is specified in the _samconfig.toml_ file. You can change it
 freely, or add some more environments. Some of the settings include:
 
-- **Profile**: name of the aws profile you saved the console credentials for.
+- **Profile**: name of the AWS profile you saved the console credentials for.
 - **Confirm changeset**: whether to ask for manual confirmation after showing
-  the change set sam will produce
+  the changeset sam will produce
 - **Stack Name**: The name of the stack to deploy to CloudFormation. This should
   be unique to your account and region, and a good starting point would be
   something matching your project name.
 - **AWS Region**: The AWS region you want to deploy your app to.
 - **Capabilities**: Many AWS SAM templates, including this example, create AWS
-  IAM roles required for the AWS Lambda function(s) included to access AWS
+  IAM roles required for the AWS Lambda function(s) include access to AWS
   services. By default, these are scoped down to minimum required permissions.
-  To deploy an AWS CloudFormation stack which creates or modifies IAM roles, the
+  To deploy an AWS CloudFormation stack that creates or modifies IAM roles, the
   `CAPABILITY_NAMED_IAM` value for `capabilities` must be provided. If
   permission isn't provided through the config file, to deploy this example you
   must explicitly pass `--capabilities CAPABILITY_NAMED_IAM` to the `sam deploy`
@@ -103,8 +103,8 @@ sam deploy --config-file samconfig.toml --config-env dev
 ```
 
 If a Stack happens to be in a ROLLBACK state, preventing you from doing any more
-deployements, or you simply want to delete it, you can do so from the AWS
-console or, if you have the AWS CLI installed, you can run
+deployments or you simply want to delete it, you can do so from the AWS console
+or, if you have the AWS CLI installed, you can run
 
 ```bash
 aws cloudformation delete-stack --stack-name library-stack
@@ -130,7 +130,7 @@ KeySchema:
   - AttributeName: sk
     KeyType: RANGE
 #############################################
-# Alter the list of global secondary indeces
+# Alter the list of global secondary indexes
 #############################################
 GlobalSecondaryIndexes:
   - IndexName: GSI_1
@@ -157,13 +157,14 @@ requestTemplates:
 
 ## 🎨 Features
 
-- **Parsed request-response**: use of [mapping templates](https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-override-request-response-parameters.html) to make sure the request
-  is well formatted and the response is as concise as possible and with proper
-  status code.\
-  The response mapping is mostly generic, so that it is possible to add or
-  modify models with minimal changes
+- **Parsed request-response**: use of
+  [mapping templates](https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-override-request-response-parameters.html)
+  to make sure the request is well-formatted and the response is as concise as
+  possible and with proper status code.\
+  The response mapping is mostly generic so that it is possible to add or modify
+  models with minimal changes
 - **Ready to use**: once properly configured and deployed, the whole API is
-  ready to use. There is no need to tweek any settings manually from the AWS
+  ready to use. There is no need to tweak any settings manually from the AWS
   console. Every resource needed is already defined in the template
 
 ## ⚠️ Limitations
@@ -171,7 +172,8 @@ requestTemplates:
 - **Response mapping template**: the template used is generic, but it is not
   suited for parsing through _lists_ or _mapping_ type attributes, leaving them
   unchanged.\
-  If your model has an attribute of any of these types, consider a custom mapping template
+  If your model has an attribute of any of these types, consider a custom
+  mapping template
 
 ## 📚 Resources
 
