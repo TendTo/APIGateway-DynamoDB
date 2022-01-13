@@ -112,6 +112,64 @@ aws cloudformation delete-stack --stack-name library-stack
 ./scripts/delete.sh
 ```
 
+## Customization
+
+This project is meant to be an example, so it is pretty simplistic. You may want
+to change the model or add more routes.\
+These are a few places in the template you may want to customize.
+
+_template.yaml_
+```yaml
+#############################################
+# Alther the key schema
+#############################################
+KeySchema: 
+  - AttributeName: pk
+    KeyType: HASH
+  - AttributeName: sk
+    KeyType: RANGE
+#############################################
+# Alter the list of global secondary indeces
+#############################################
+GlobalSecondaryIndexes:
+  - IndexName: GSI_1
+    ...
+```
+_swagger.yaml_
+```yaml
+#############################################
+# Change the model or add new ones
+#############################################
+definitions:
+  Author:
+    ...
+#############################################
+# Change the request mapping templates
+#############################################
+requestTemplates:
+  application/json:
+    Fn::Sub: |
+      ...
+#############################################
+# Change the responses mapping templates
+#############################################
+responses:
+  default:
+    statusCode: "200"
+    responseTemplates:
+      application/json: |
+        ...
+```
+
+## 🎨 Features
+
+- **Clean request-response**: use of mapping templates to make sure the request
+  is well formatted and the response is as concise as possible and with proper
+  status code
+- **Ready to use**: once properly configured and deployed, the whole API is
+  ready to use. There is no need to tweek any settings manually from the AWS
+  console. Every resource needed is already defined in the template
+
 ## 📚 Resources
 
 - [AWS Compute Blog: Using Amazon API Gateway as a proxy for DynamoDB](https://aws.amazon.com/it/blogs/compute/using-amazon-api-gateway-as-a-proxy-for-dynamodb/)
