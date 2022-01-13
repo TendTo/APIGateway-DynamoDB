@@ -119,6 +119,7 @@ to change the model or add more routes.\
 These are a few places in the template you may want to customize.
 
 _template.yaml_
+
 ```yaml
 #############################################
 # Alther the key schema
@@ -135,7 +136,9 @@ GlobalSecondaryIndexes:
   - IndexName: GSI_1
     ...
 ```
+
 _swagger.yaml_
+
 ```yaml
 #############################################
 # Change the model or add new ones
@@ -150,25 +153,25 @@ requestTemplates:
   application/json:
     Fn::Sub: |
       ...
-#############################################
-# Change the responses mapping templates
-#############################################
-responses:
-  default:
-    statusCode: "200"
-    responseTemplates:
-      application/json: |
-        ...
 ```
 
 ## 🎨 Features
 
-- **Clean request-response**: use of mapping templates to make sure the request
+- **Parsed request-response**: use of [mapping templates](https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-override-request-response-parameters.html) to make sure the request
   is well formatted and the response is as concise as possible and with proper
-  status code
+  status code.\
+  The response mapping is mostly generic, so that it is possible to add or
+  modify models with minimal changes
 - **Ready to use**: once properly configured and deployed, the whole API is
   ready to use. There is no need to tweek any settings manually from the AWS
   console. Every resource needed is already defined in the template
+
+## ⚠️ Limitations
+
+- **Response mapping template**: the template used is generic, but it is not
+  suited for parsing through _lists_ or _mapping_ type attributes, leaving them
+  unchanged.\
+  If your model has an attribute of any of these types, consider a custom mapping template
 
 ## 📚 Resources
 
