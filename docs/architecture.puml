@@ -1,0 +1,37 @@
+@startuml Api Gateway to DynamoDB
+title Api Gateway to DynamoDB
+!include <awslib/AWSCommon>
+!include <awslib/AWSSimplified>
+
+!include <awslib/General/Users>
+!include <awslib/mobile/APIGateway>
+!include <awslib/mobile/APIGatewayEndpoint>
+!include <awslib/Compute/Lambda>
+!include <awslib/Database/DynamoDB>
+!include <awslib/ManagementGovernance/OpsWorksLayers>
+!include <awslib/Storage/SimpleStorageServiceS3Standard>
+
+left to right direction
+
+Users(users, "Clients", "")
+package "Deployment on AWS" {
+    APIGateway(api, "Gateway", "")
+    APIGatewayEndpoint(e_delete, "[DELETE] /authors{id}", "")
+    APIGatewayEndpoint(e_read, "[GET] /authors/{id}", "")
+    APIGatewayEndpoint(e_upsert, "[POST] /authors", "")
+    APIGatewayEndpoint(e_readAll, "[GET] /authors", "")
+    DynamoDB(db, "Library Table", "")
+}
+
+users --> api : interact with the API endpoint
+api --> e_read
+api --> e_upsert
+api --> e_readAll
+api --> e_delete
+
+e_upsert <--> db
+e_read <--> db
+e_readAll <--> db
+e_delete <--> db
+
+@enduml

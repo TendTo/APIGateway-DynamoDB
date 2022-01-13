@@ -7,6 +7,7 @@ Use AWS API Gateway as a proxy for DynamoDB.
 ```yaml
 .
 ├── .devcontainer      # used by VsCode to launch a devcontainer with SAM
+├── docs               # documentation
 ├── scripts            # utility scripts to deploy and delete the AWS Cloudformation Stack
 ├── .gitignore         # .gitignore file
 ├── LICENCE            # license of the project
@@ -111,6 +112,10 @@ aws cloudformation delete-stack --stack-name library-stack
 # or
 ./scripts/delete.sh
 ```
+
+Here's an example of what this template would produce:
+
+![aws-schema](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/TendTo/APIGateway-DynamoDB/master/docs/architecture.puml)
 
 ## Customization
 
