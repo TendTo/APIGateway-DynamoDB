@@ -89,7 +89,7 @@ paths:
           description: "Newly created author or updated author"
           schema:
             $ref: "#/definitions/Author"
-        "400":
+        "404":
           description: "The author to update does not exist"
           schema:
             $ref: "#/definitions/Empty"
@@ -106,7 +106,7 @@ paths:
             responseTemplates:
               application/json: |
                 #if($input.path('$.message') && $input.path('$.message').contains('The conditional request failed'))
-                  #set($context.responseOverride.status = 400)
+                  #set($context.responseOverride.status = 404)
                   {}
                 #else
                   #set($context.responseOverride.status = 200)
@@ -213,7 +213,7 @@ paths:
             responseTemplates:
               application/json: |
                 #if($input.body == "{}")
-                  #set($context.responseOverride.status = 400)
+                  #set($context.responseOverride.status = 404)
                   {}
                 #else
                   #set($context.responseOverride.status = 200)
