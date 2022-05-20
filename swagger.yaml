@@ -56,7 +56,7 @@ paths:
           application/json: 
             Fn::Sub: |
               {
-                  "TableName": "${tableName}",
+                  "TableName": "${DynamoDB}",
                   "IndexName": "GSI_1",
                   "KeyConditionExpression": "#sk = :sk",
                   "ExpressionAttributeNames": {
@@ -120,7 +120,7 @@ paths:
             Fn::Sub: |
               #set($isUpdate = $input.path('$.pk') && $input.path('$.pk') != "")
               {
-                  "TableName": "${tableName}",
+                  "TableName": "${DynamoDB}",
                   "Key": {
                   #if($isUpdate)
                       "pk": {
@@ -222,7 +222,7 @@ paths:
           application/json:
             Fn::Sub: |
               {
-                  "TableName": "${tableName}",
+                  "TableName": "${DynamoDB}",
                   "Key": {
                       "pk": {
                           "S": "$input.params('id')"
@@ -261,7 +261,7 @@ paths:
           application/json:
             Fn::Sub: |
               {
-                  "TableName": "${tableName}",
+                  "TableName": "${DynamoDB}",
                   "Key": {
                       "pk": {
                           "S": "$input.params('id')"

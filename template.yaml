@@ -2,48 +2,111 @@ AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: ApiGateway to DynamoDb
 
+# TODO: correct the map reference in the swagger file
+Mappings:
+  DynamoDB:
+    Response:
+      Def: |
+        #set($fun_stack = [])
+
+        #define( $DDBMapParser )
+          #set($fun_idx = $fun_stack.size() - 1)
+          #foreach($entry in $fun_stack[$fun_idx].entrySet())
+            #if($entry.value.keySet().contains("S"))
+              "$entry.key": "$entry.value.S"
+            #elseif($entry.value.keySet().contains("B"))
+              "$entry.key": "$entry.value.B"
+            #elseif($entry.value.keySet().contains("NULL"))
+              "$entry.key": null
+            #elseif($entry.value.keySet().contains("NS"))
+              "$entry.key": [
+                #foreach($value in $entry.value.NS)
+                  $value #if($foreach.hasNext),#end
+                #end
+              ]
+            #elseif($entry.value.keySet().contains("M"))
+              #set($ret = $fun_stack.add($entry.value.M))
+              "$entry.key": { $DDBMapParser }
+            #elseif($entry.value.keySet().contains("L"))
+              #set($ret = $fun_stack.add($entry.value.L))
+              "$entry.key": [ $DDBListParser ]
+            #else
+              "$entry.key": $entry.value.values().toArray()[0]
+            #end
+            #if($foreach.hasNext),#end
+          #end
+          #set($fun_idx = $fun_stack.size() - 1)
+          #set($ret = $fun_stack.remove($fun_idx))
+        #end
+
+        #define( $DDBListParser )
+          #set($fun_idx = $fun_stack.size() - 1)
+          #foreach($list_entry in $fun_stack[$fun_idx].toArray())
+            #if($list_entry.keySet().contains("S"))
+              "$list_entry.S"
+            #elseif($list_entry.keySet().contains("B"))
+              "$list_entry.B"
+            #elseif($list_entry.keySet().contains("NULL"))
+              null
+            #elseif($list_entry.keySet().contains("M"))
+              #set($ret = $fun_stack.add($list_entry.M))
+              { $DDBMapParser }
+            #elseif($list_entry.keySet().contains("L"))
+              #set($ret = $fun_stack.add($list_entry.L))
+              [ $DDBListParser ]
+            #else
+              $list_entry.values().toArray()[0]
+            #end
+            #if($foreach.hasNext),#end
+          #end
+          #set($fun_idx = $fun_stack.size() - 1)
+          #set($ret = $fun_stack.remove($fun_idx))
+        #end
+
+        #define( $DDBParser )
+          #set($fun_idx = $fun_stack.size() - 1)
+          #foreach($entry in $fun_stack[$fun_idx].entrySet())
+            #if($entry.value.keySet().contains("S"))
+              "$entry.key": "$entry.value.S"
+            #elseif($entry.value.keySet().contains("B"))
+              "$entry.key": "$entry.value.B"
+            #elseif($entry.value.keySet().contains("NULL"))
+              "$entry.key": null
+            #elseif($entry.value.keySet().contains("NS"))
+              "$entry.key": [
+                #foreach($value in $entry.value.NS)
+                  $value #if($foreach.hasNext),#end
+                #end
+              ]
+            #elseif($entry.value.keySet().contains("M"))
+              #set($ret = $fun_stack.add($entry.value.M))
+              "$entry.key": { $DDBMapParser }
+            #elseif($entry.value.keySet().contains("L"))
+              #set($ret = $fun_stack.add($entry.value.L))
+              "$entry.key": [ $DDBListParser ]
+            #else
+              "$entry.key": $entry.value.values().toArray()[0]
+            #end
+            #if($foreach.hasNext),#end
+          #end
+          #set($fun_idx = $fun_stack.size() - 1)
+          #set($ret = $fun_stack.remove($fun_idx))
+        #end
+
 Parameters:
   apiStage:
     Type: String
     Description: stage used to deploy the API
     Default: dev
-  tableName:
+  allowedCORS:
     Type: String
-    Description: name of the dynamoDB table
-    Default: TableName
-  responseMappingTemplateDef:
-    Type: String
-    Description: |
-      utility definition used in most response mapping templates.
-      Parses the item recieved from DynamoDB in a more JSON friendly form.
-      Do not override unless you know what you are doing
-    Default: |
-      #define( $DDBAttributeParser )
-        #foreach($entry in $item.entrySet())
-          #if($entry.value.S && $entry.value.S != "")
-            "$entry.key": "$entry.value.S"
-          #elseif($entry.value.B && $entry.value.B != "")
-            "$entry.key": "$entry.value.B"
-          #elseif($entry.value.NULL && $entry.value.NULL != "")
-            "$entry.key": null
-          #elseif($entry.value.NS && $entry.value.NS != "")
-            "$entry.key": [
-            #foreach($value in $entry.value.NS)
-              $value #if($foreach.hasNext),#end
-            #end
-            ]
-          #elseif($entry.value.M && $entry.value.M != "")
-            "$entry.key": $input.json("$.Item.${entry.key}")
-          #else
-            "$entry.key": $entry.value.values().toArray()[0]
-          #end
-          #if($foreach.hasNext),#end
-        #end
-      #end
+    Description: list of CORS allowed urls
+    Default: "*"
 
+Conditions:
+  AllowAllCORS: !Equals [!Ref allowedCORS, "*"]
 
 Resources:
-
   ApiGatewayRole:
     Type: AWS::IAM::Role
     Properties:
@@ -68,31 +131,26 @@ Resources:
         Statement:
           - Sid: "DynamoDBCRUDPolicy"
             Effect: "Allow"
-            Resource: 
+            Resource:
               - !GetAtt DynamoDB.Arn
               - !Sub "${DynamoDB.Arn}/index/*"
             Action:
-              - dynamodb:BatchGetItem
-              - dynamodb:BatchWriteItem
-              - dynamodb:PutItem
               - dynamodb:DeleteItem
               - dynamodb:GetItem
-              - dynamodb:Scan
               - dynamodb:Query
               - dynamodb:UpdateItem
 
   DynamoDB:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Ref tableName
-      AttributeDefinitions: 
+      AttributeDefinitions:
         - AttributeName: pk
           AttributeType: "S"
         - AttributeName: sk
           AttributeType: "S"
         - AttributeName: fk
           AttributeType: "S"
-      KeySchema: 
+      KeySchema:
         - AttributeName: pk
           KeyType: HASH
         - AttributeName: sk
@@ -120,15 +178,19 @@ Resources:
           ProvisionedThroughput:
             ReadCapacityUnits: 1
             WriteCapacityUnits: 1
-      ProvisionedThroughput: 
+      ProvisionedThroughput:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
 
   ApiGateway:
     Type: AWS::Serverless::Api
     Properties:
-      Name: gateway
+      Name: !Sub ${AWS::StackName}-ApiGateway
       StageName: !Ref apiStage
+      Cors:
+        AllowOrigin: !Ref allowedCORS
+        AllowMethods: "'POST, GET, DELETE'"
+        AllowHeaders: "'X-Forwarded-For'"
       DefinitionBody:
         Fn::Transform:
           Name: AWS::Include
@@ -139,4 +201,3 @@ Outputs:
   ApiGateway:
     Description: "API Gateway endpoint URL for ${apiStage}"
     Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${apiStage}/"
-

@@ -8,7 +8,7 @@ stack_name = "library-stack"
 s3_prefix = "library"
 s3_bucket = "my-function-bucket-for-lambda"
 region = "eu-west-1"
-parameter_overrides = "apiStage=\"dev\" tableName=\"library-table\"" 
+parameter_overrides = "apiStage=\"dev\""
 
 [dev.local_invoke.parameters]
 env_vars = "env.json"
