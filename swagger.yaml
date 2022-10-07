@@ -7,14 +7,15 @@ host: "api.region.amazonaws.com"
 basePath:
   Ref: apiStage
 schemes:
-- "https"
+  - "https"
+
 paths:
   /authors:
     get:
       consumes:
-      - "application/json"
+        - "application/json"
       produces:
-      - "application/json"
+        - "application/json"
       responses:
         "200":
           description: "List of all the authors"
@@ -22,17 +23,18 @@ paths:
             $ref: "#/definitions/Authors"
       x-amazon-apigateway-integration:
         type: "aws"
-        credentials: 
+        credentials:
           Fn::GetAtt: [ApiGatewayRole, Arn]
         httpMethod: "POST"
-        uri: 
+        uri:
           Fn::Sub: "arn:aws:apigateway:${AWS::Region}:dynamodb:action/Query"
         responses:
           default:
             statusCode: "200"
             responseTemplates:
-              application/json: 
-                Fn::Sub: |
+              application/json:
+                Fn::Sub:
+                  - |
                     ${responseMappingTemplateDef}
                     #if($input.path('$.message') && $input.path('$.message').contains('The conditional request failed'))
                       #set($context.responseOverride.status = 400)
@@ -44,16 +46,19 @@ paths:
                         "Count": $inputRoot.Count,
                         "ScannedCount": $inputRoot.ScannedCount,
                         "Items": [
-                            #foreach($item in $inputRoot.Items) 
+                            #foreach($item in $input.path('$.Items')) 
                             {
-                              $DDBAttributeParser
+                              #set($ret = $fun_stack.add($item))
+                              $DDBParser
                             } #if($foreach.hasNext),#end
                             #end
                         ]
                       }
                     #end
+                  - responseMappingTemplateDef:
+                      Fn::FindInMap: ["DynamoDB", "Response", "Def"]
         requestTemplates:
-          application/json: 
+          application/json:
             Fn::Sub: |
               {
                   "TableName": "${tableName}",
@@ -71,15 +76,15 @@ paths:
         passthroughBehavior: "when_no_templates"
     post:
       consumes:
-      - "application/json"
+        - "application/json"
       produces:
-      - "application/json"
+        - "application/json"
       parameters:
-      - in: "body"
-        name: "Author"
-        required: true
-        schema:
-          $ref: "#/definitions/Author"
+        - in: "body"
+          name: "Author"
+          required: true
+          schema:
+            $ref: "#/definitions/Author"
       responses:
         "200":
           description: "Newly created author or updated author"
@@ -92,7 +97,7 @@ paths:
       x-amazon-apigateway-request-validator: "Validate body"
       x-amazon-apigateway-integration:
         type: "aws"
-        credentials: 
+        credentials:
           Fn::GetAtt: [ApiGatewayRole, Arn]
         httpMethod: "POST"
         uri: "arn:aws:apigateway:eu-west-1:dynamodb:action/UpdateItem"
@@ -100,23 +105,27 @@ paths:
           default:
             statusCode: "200"
             responseTemplates:
-              application/json: 
-                Fn::Sub: |
-                  ${responseMappingTemplateDef}
-                  #if($input.path('$.message') && $input.path('$.message').contains('The conditional request failed'))
-                    #set($context.responseOverride.status = 404)
-                    {}
-                  #else
-                    #set($context.responseOverride.status = 200)
-                    #set($item = $input.path('$.Attributes'))
-                    {
-                      "Item": {
-                        $DDBAttributeParser
+              application/json:
+                Fn::Sub:
+                  - |
+                    ${responseMappingTemplateDef}
+                    #if($input.path('$.message') && $input.path('$.message').contains('The conditional request failed'))
+                      #set($context.responseOverride.status = 404)
+                      {}
+                    #else
+                      #set($context.responseOverride.status = 200)
+                      #set($item = $input.path('$.Attributes'))
+                      {
+                        "Item": {
+                            #set($ret = $fun_stack.add($item))
+                            $DDBParser
+                        }
                       }
-                    }
-                  #end
+                    #end
+                  - responseMappingTemplateDef:
+                      Fn::FindInMap: ["DynamoDB", "Response", "Def"]
         requestTemplates:
-          application/json: 
+          application/json:
             Fn::Sub: |
               #set($isUpdate = $input.path('$.pk') && $input.path('$.pk') != "")
               {
@@ -176,14 +185,14 @@ paths:
   /authors/{id}:
     get:
       consumes:
-      - "application/json"
+        - "application/json"
       produces:
-      - "application/json"
+        - "application/json"
       parameters:
-      - name: "id"
-        in: "path"
-        required: true
-        type: "string"
+        - name: "id"
+          in: "path"
+          required: true
+          type: "string"
       responses:
         "200":
           description: "Author"
@@ -195,7 +204,7 @@ paths:
             $ref: "#/definitions/Empty"
       x-amazon-apigateway-integration:
         type: "aws"
-        credentials: 
+        credentials:
           Fn::GetAtt: [ApiGatewayRole, Arn]
         httpMethod: "POST"
         uri: "arn:aws:apigateway:eu-west-1:dynamodb:action/GetItem"
@@ -204,20 +213,24 @@ paths:
             statusCode: "200"
             responseTemplates:
               application/json:
-                Fn::Sub: |
-                  ${responseMappingTemplateDef}
-                  #if($input.body == "{}")
-                    #set($context.responseOverride.status = 404)
-                    {}
-                  #else
-                    #set($context.responseOverride.status = 200)
-                    #set($item = $input.path('$.Item'))
-                    {
-                      "Item": {
-                        $DDBAttributeParser
+                Fn::Sub:
+                  - |
+                    ${responseMappingTemplateDef}
+                    #if($input.body == "{}")
+                      #set($context.responseOverride.status = 404)
+                      {}
+                    #else
+                      #set($context.responseOverride.status = 200)
+                      #set($item = $input.path('$.Item'))
+                      {
+                        "Item": {
+                            #set($ret = $fun_stack.add($item))
+                            $DDBParser
+                        }
                       }
-                    }
-                  #end
+                    #end
+                  - responseMappingTemplateDef:
+                      Fn::FindInMap: ["DynamoDB", "Response", "Def"]
         requestTemplates:
           application/json:
             Fn::Sub: |
@@ -235,14 +248,14 @@ paths:
         passthroughBehavior: "when_no_templates"
     delete:
       consumes:
-      - "application/json"
+        - "application/json"
       produces:
-      - "application/json"
+        - "application/json"
       parameters:
-      - name: "id"
-        in: "path"
-        required: true
-        type: "string"
+        - name: "id"
+          in: "path"
+          required: true
+          type: "string"
       responses:
         "200":
           description: "Success"
@@ -250,7 +263,7 @@ paths:
             $ref: "#/definitions/Empty"
       x-amazon-apigateway-integration:
         type: "aws"
-        credentials: 
+        credentials:
           Fn::GetAtt: [ApiGatewayRole, Arn]
         httpMethod: "POST"
         uri: "arn:aws:apigateway:eu-west-1:dynamodb:action/DeleteItem"
@@ -279,9 +292,9 @@ definitions:
   Author:
     type: object
     required:
-    - Address
-    - Name
-    - URL
+      - Address
+      - Name
+      - URL
     properties:
       pk:
         type: string
@@ -303,7 +316,7 @@ definitions:
       Items:
         type: array
         items:
-          $ref: '#/definitions/Author'
+          $ref: "#/definitions/Author"
       ScannedCount:
         type: integer
 x-amazon-apigateway-request-validators:

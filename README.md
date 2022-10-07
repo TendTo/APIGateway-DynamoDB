@@ -80,14 +80,14 @@ version = 0.1                                 # required
 
 [dev.deploy.parameters]                       # used by sam deploy --config-env dev
 profile = "default"                           # aws profile
-confirm_changeset = true 
+confirm_changeset = true
 capabilities = "CAPABILITY_NAMED_IAM"         # needed to manage IAM roles
 stack_name = "library-stack"                  # name of the stack that will be deployed
 s3_prefix = "library-stack-folder"            # folder in the S3 bucket
 s3_bucket = "library-stack-bucket"            # S3 bucket unique name
 region = "eu-west-1"
 # should not include sensitive tokens. Overrides the parameters "apiStage" and "token"
-parameter_overrides = "apiStage=\"dev\" tableName=\"library-table\"" 
+parameter_overrides = "apiStage=\"dev\" tableName=\"library-table\""
 
 [dev.local_invoke.parameters]                 # used by sam local invoke --config-env dev
 env_vars = "env.json"                         # file that stores the environment variables
@@ -129,7 +129,7 @@ _template.yaml_
 #############################################
 # Alther the key schema
 #############################################
-KeySchema: 
+KeySchema:
   - AttributeName: pk
     KeyType: HASH
   - AttributeName: sk
@@ -149,8 +149,7 @@ _swagger.yaml_
 # Change the model or add new ones
 #############################################
 definitions:
-  Author:
-    ...
+  Author: ...
 #############################################
 # Change the request mapping templates
 #############################################
@@ -174,15 +173,10 @@ requestTemplates:
 
 ## ⚠️ Limitations
 
-- **Response mapping template**: the template used is generic, but it is not
-  suited for parsing through _lists_ or _mapping_ type attributes, leaving them
-  unchanged.\
-  To do it properly, AWS mapping templates should support
-  [Velocimacros](https://velocity.apache.org/engine/1.7/user-guide.html#velocimacros),
-  but right now they
-  [don't](https://forums.aws.amazon.com/thread.jspa?threadID=284790).\
-  If your model has an attribute of any of these types, consider a custom
-  mapping template
+- **Response mapping template**: the template used is generic, but it is not suited for parsing through _lists_ or _mapping_ of any length.  
+  To do it properly, AWS mapping templates should support [Velocimacros](https://velocity.apache.org/engine/1.7/user-guide.html#velocimacros),
+  but right now they [don't](https://forums.aws.amazon.com/thread.jspa?threadID=284790).  
+  If your model has a known depth, you can duplicate the list or map macro that many times, giving it each time a different name.
 
 ## 📚 Resources
 
